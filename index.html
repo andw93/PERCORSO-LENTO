@@ -3,67 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Percorso Lento - Inizio (con Fotocamera)</title>
-    <script>
-        let video;
-        let canvas;
-        let context;
-        let lastImageData;
-        let motionDetected = false;
-
-        function startTimer() {
-            localStorage.setItem('startTime', Date.now());
-            alert("Timer avviato!");
+    <title>Percorso Lento</title>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+            display: none; /* Nascondiamo il video */
         }
+    </style>
+</head>
+<body>
+    <h1>Percorso Lento</h1>
+    <video id="video" autoplay></video>
+    <script>
+        let startTime;
+        let timerInterval;
+        let isMoving = false;
 
-        function detectMotion() {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        // Funzione per rilevare il movimento
+        function detectMovement(videoElement) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
 
-            if (lastImageData) {
-                const diff = calculateDifference(lastImageData, currentImageData);
-                if (diff > 20) { // Soglia per rilevare movimento
-                    if (!motionDetected) {
-                        motionDetected = true;
-                        startTimer();
+            function draw() {
+                context.drawImage(videoElement, 0, 0);
+                const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+                // Logica di rilevamento del movimento
+                // Qui dovresti implementare l'algoritmo di rilevamento del movimento
+                // Ad esempio, potresti confrontare il frame corrente con un frame precedente
+
+                // Se viene rilevato movimento
+                if (isMoving) {
+                    // Avvia il timer se non è già avviato
+                    if (!startTime) {
+                        startTime = new Date();
+                        timerInterval = setInterval(() => {
+                            const currentTime = new Date();
+                            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+                            localStorage.setItem('elapsedTime', elapsedTime);
+                        }, 1000);
                     }
                 }
+
+                requestAnimationFrame(draw);
             }
-            lastImageData = currentImageData;
+
+            draw();
         }
 
-        function calculateDifference(img1, img2) {
-            let diff = 0;
-            for (let i = 0; i < img1.data.length; i += 4) {
-                const rDiff = Math.abs(img1.data[i] - img2.data[i]);
-                const gDiff = Math.abs(img1.data[i + 1] - img2.data[i + 1]);
-                const bDiff = Math.abs(img1.data[i + 2] - img2.data[i + 2]);
-                diff += rDiff + gDiff + bDiff;
-            }
-            return diff / (img1.data.length / 4); // Media della differenza
-        }
-
-        function startVideo() {
-            video = document.getElementById('video');
-            canvas = document.getElementById('canvas');
-            context = canvas.getContext('2d');
-
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then((stream) => {
-                    video.srcObject = stream;
-                    video.play();
-                    setInterval(detectMotion, 100); // Controlla il movimento ogni 100ms
-                })
-                .catch((err) => {
-                    alert("Errore nell'accesso alla fotocamera: " + err);
-                });
-        }
+        // Accedi alla fotocamera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                const videoElement = document.getElementById('video');
+                videoElement.srcObject = stream;
+                videoElement.play();
+                detectMovement(videoElement);
+            })
+            .catch(err => {
+                console.error("Errore nell'accesso alla fotocamera: ", err);
+            });
     </script>
-</head>
-<body onload="startVideo()">
-    <h1>Percorso Lento - Inizio</h1>
-    <video id="video" width="320" height="240" style="display: none;"></video>
-    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-    <p>Il timer sarà avviato automaticamente al rilevamento del veicolo.</p>
 </body>
 </html>
