@@ -3,37 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Percorso Lento - Visualizzazione</title>
+    <title>Risultati</title>
     <style>
-        .rosso {
-            color: red;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
         }
-        .verde {
-            color: green;
+        #timeDisplay {
+            font-size: 2em;
+            margin-top: 20px;
         }
     </style>
+</head>
+<body onload="showTime()">
+    <h1>Risultati</h1>
+    <div id="timeDisplay"></div>
     <script>
-        function showElapsedTime() {
+        function showTime() {
             const elapsedTime = localStorage.getItem('elapsedTime');
-            const display = document.getElementById('timeDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
 
-            if (elapsedTime) {
-                display.innerText = elapsedTime + " secondi";
-                if (parseFloat(elapsedTime) < 15) {
-                    display.className = 'rosso';
+            if (elapsedTime !== null) {
+                timeDisplay.innerText = `Tempo impiegato: ${elapsedTime} secondi`;
+
+                // Cambia il colore in base al tempo
+                if (elapsedTime < 15) {
+                    timeDisplay.style.color = 'red';
                 } else {
-                    display.className = 'verde';
+                    timeDisplay.style.color = 'green';
                 }
             } else {
-                display.innerText = "Il tempo non è ancora stato calcolato.";
+                timeDisplay.innerText = "Il timer non è stato avviato.";
+                timeDisplay.style.color = 'black'; // Colore neutro se non è stato avviato
             }
         }
-
-        setInterval(showElapsedTime, 1000);
     </script>
-</head>
-<body>
-    <h1>Percorso Lento - Visualizzazione Tempo</h1>
-    <p id="timeDisplay">Il tempo non è ancora stato calcolato.</p>
 </body>
 </html>
