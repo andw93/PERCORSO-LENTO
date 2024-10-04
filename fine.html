@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Percorso Veloce</title>
     <script>
+        // Funzione per fermare il timer
         function stopTimer() {
             const elapsedTime = localStorage.getItem('elapsedTime');
+            const timeDisplay = document.getElementById('timeDisplay');
+
             if (elapsedTime !== null) {
-                const timeDisplay = document.getElementById('timeDisplay');
                 timeDisplay.innerText = `Tempo impiegato: ${elapsedTime} secondi`;
+                // Cambia il colore in base al tempo
                 timeDisplay.style.color = elapsedTime < 15 ? 'red' : 'green';
             } else {
-                alert("Il timer non è stato avviato.");
+                timeDisplay.innerText = "Il timer non è stato avviato.";
+                timeDisplay.style.color = 'black'; // Colore neutro se non è stato avviato
             }
         }
     </script>
