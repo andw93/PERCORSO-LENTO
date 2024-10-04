@@ -16,57 +16,82 @@
     <h1>Percorso Lento</h1>
     <video id="video" autoplay></video>
     <script>
-        let startTime;
-        let timerInterval;
-        let isMoving = false;
-        const movementThreshold = 10; // Soglia per il movimento
+        let startTime = null; // Impostiamo a null per indicare che il timer non è partito
+        let timerInterval = null; // Salva l'intervallo del timer
+        let isMoving = false; // Variabile per il rilevamento del movimento
 
-        // Funzione per rilevare il movimento
+        // Funzione per inviare il tempo iniziale a JSONBin
+        function initializeBin() {
+            fetch('https://api.jsonbin.io/v3/b/67001a81e41b4d34e43cf74f', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$CX92HhReDPKzhhLiVAzULeYrxLoScgsZR5q94zC8VzIB21w2.XmiK',
+                },
+                body: JSON.stringify({ elapsedTime: 0 }) // Inizializza il bin
+            })
+            .then(response => response.json())
+            .then(data => console.log('Bin inizializzato:', data))
+            .catch(error => console.error('Errore nell\'inizializzazione del bin:', error));
+        }
+
+        // Funzione per avviare il timer
+        function startTimer() {
+            startTime = Date.now(); // Imposta l'orario attuale
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                // Invia il tempo trascorso a JSONBin
+                fetch('https://api.jsonbin.io/v3/b/67001a81e41b4d34e43cf74f', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': '$2a$10$CX92HhReDPKzhhLiVAzULeYrxLoScgsZR5q94zC8VzIB21w2.XmiK',
+                    },
+                    body: JSON.stringify({ elapsedTime: elapsedTime }),
+                })
+                .then(response => response.json())
+                .then(data => console.log('Tempo inviato:', data))
+                .catch(error => console.error('Errore nell\'invio del tempo:', error));
+            }, 1000);
+            console.log('Timer avviato');
+        }
+
+        // Funzione per il rilevamento del movimento
         function detectMovement(videoElement) {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
+            canvas.width = 640; // Imposta larghezza del canvas
+            canvas.height = 480; // Imposta altezza del canvas
 
             function draw() {
-                context.drawImage(videoElement, 0, 0);
-                const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 // Logica di rilevamento del movimento
-                // Qui dovresti implementare l'algoritmo di rilevamento del movimento
-                // Per ora, simuleremo il movimento per testare la funzionalità
-                const currentPixelValue = frame.data[0]; // Prendiamo un valore RGB
-                // Simuliamo un movimento cambiando isMoving
-                if (Math.random() > 0.95) { // Simulazione di movimento casuale
-                    isMoving = true;
-                } else {
-                    isMoving = false;
-                }
+                let isMovementDetected = Math.random() < 0.1; // Simula un movimento
 
-                // Se viene rilevato movimento
-                if (isMoving) {
-                    // Avvia il timer se non è già avviato
-                    if (!startTime) {
-                        startTime = new Date();
-                        timerInterval = setInterval(() => {
-                            const currentTime = new Date();
-                            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
-                            localStorage.setItem('elapsedTime', elapsedTime);
-                        }, 1000);
-                        console.log('Timer avviato.');
+                if (isMovementDetected) {
+                    if (!isMoving) {
+                        console.log('Movimento rilevato');
+                        isMoving = true; // Rileva movimento
+                        startTimer(); // Avvia il timer
                     }
+                } else {
+                    isMoving = false; // Ripristina lo stato del movimento
                 }
 
-                requestAnimationFrame(draw);
+                requestAnimationFrame(draw); // Richiama di nuovo la funzione
             }
 
-            draw();
+            draw(); // Inizia il disegno
         }
 
-        // Accedi alla fotocamera
+        // Accedi alla fotocamera e inizializza il bin
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 const videoElement = document.getElementById('video');
                 videoElement.srcObject = stream;
                 videoElement.play();
-                detectMovement(videoElement);
+                detectMovement(videoElement); // Inizia a rilevare il movimento
+                initializeBin(); // Inizializza il bin
             })
             .catch(err => {
                 console.error("Errore nell'accesso alla fotocamera: ", err);
