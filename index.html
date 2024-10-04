@@ -19,6 +19,7 @@
         let startTime;
         let timerInterval;
         let isMoving = false;
+        const movementThreshold = 10; // Soglia per il movimento
 
         // Funzione per rilevare il movimento
         function detectMovement(videoElement) {
@@ -30,7 +31,14 @@
                 const frame = context.getImageData(0, 0, canvas.width, canvas.height);
                 // Logica di rilevamento del movimento
                 // Qui dovresti implementare l'algoritmo di rilevamento del movimento
-                // Ad esempio, potresti confrontare il frame corrente con un frame precedente
+                // Per ora, simuleremo il movimento per testare la funzionalità
+                const currentPixelValue = frame.data[0]; // Prendiamo un valore RGB
+                // Simuliamo un movimento cambiando isMoving
+                if (Math.random() > 0.95) { // Simulazione di movimento casuale
+                    isMoving = true;
+                } else {
+                    isMoving = false;
+                }
 
                 // Se viene rilevato movimento
                 if (isMoving) {
@@ -42,6 +50,7 @@
                             const elapsedTime = Math.floor((currentTime - startTime) / 1000);
                             localStorage.setItem('elapsedTime', elapsedTime);
                         }, 1000);
+                        console.log('Timer avviato.');
                     }
                 }
 
