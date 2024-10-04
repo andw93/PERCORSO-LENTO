@@ -3,99 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Percorso Lento</title>
+    <title>Timer con Rilevamento Movimento</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js"></script>
     <style>
-        video {
+        #video {
             width: 100%;
-            height: auto;
-            display: none; /* Nascondiamo il video */
+            max-width: 600px;
+        }
+        #timer {
+            font-size: 2em;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Percorso Lento</h1>
-    <video id="video" autoplay></video>
-    <script>
-        let startTime = null; // Impostiamo a null per indicare che il timer non è partito
-        let timerInterval = null; // Salva l'intervallo del timer
-        let isMoving = false; // Variabile per il rilevamento del movimento
 
-        // Funzione per inviare il tempo iniziale a JSONBin
-        function initializeBin() {
-            fetch('https://api.jsonbin.io/v3/b/67001a81e41b4d34e43cf74f', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': '$2a$10$CX92HhReDPKzhhLiVAzULeYrxLoScgsZR5q94zC8VzIB21w2.XmiK',
-                },
-                body: JSON.stringify({ elapsedTime: 0 }) // Inizializza il bin
-            })
-            .then(response => response.json())
-            .then(data => console.log('Bin inizializzato:', data))
-            .catch(error => console.error('Errore nell\'inizializzazione del bin:', error));
-        }
+<video id="video" autoplay></video>
+<div id="timer">Tempo: 0s</div>
+<button id="start">Inizia Timer</button>
+<button id="stop">Ferma Timer</button>
 
-        // Funzione per avviare il timer
-        function startTimer() {
-            startTime = Date.now(); // Imposta l'orario attuale
-            timerInterval = setInterval(() => {
-                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                // Invia il tempo trascorso a JSONBin
-                fetch('https://api.jsonbin.io/v3/b/67001a81e41b4d34e43cf74f', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': '$2a$10$CX92HhReDPKzhhLiVAzULeYrxLoScgsZR5q94zC8VzIB21w2.XmiK',
-                    },
-                    body: JSON.stringify({ elapsedTime: elapsedTime }),
-                })
-                .then(response => response.json())
-                .then(data => console.log('Tempo inviato:', data))
-                .catch(error => console.error('Errore nell\'invio del tempo:', error));
-            }, 1000);
-            console.log('Timer avviato');
-        }
+<script>
+    // Configurazione di Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyCzE1CfaqDBF2CpbCrhoIzhIMXrqDjhkQA",
+        authDomain: "percorso-lento.firebaseapp.com",
+        databaseURL: "https://percorso-lento-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "percorso-lento",
+        storageBucket: "percorso-lento.appspot.com",
+        messagingSenderId: "804922956072",
+        appId: "1:804922956072:web:215133a98d820c16e3981d",
+        measurementId: "G-25NWDBPJPD"
+    };
 
-        // Funzione per il rilevamento del movimento
-        function detectMovement(videoElement) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = 640; // Imposta larghezza del canvas
-            canvas.height = 480; // Imposta altezza del canvas
+    // Inizializza Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const analytics = firebase.getAnalytics(app);
+    const database = firebase.database();
 
-            function draw() {
-                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                // Logica di rilevamento del movimento
-                let isMovementDetected = Math.random() < 0.1; // Simula un movimento
+    let timerInterval;
+    let seconds = 0;
+    let timerRunning = false;
 
-                if (isMovementDetected) {
-                    if (!isMoving) {
-                        console.log('Movimento rilevato');
-                        isMoving = true; // Rileva movimento
-                        startTimer(); // Avvia il timer
+    // Accedi alla fotocamera
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            document.getElementById('video').srcObject = stream;
+            detectMotion(stream);
+        })
+        .catch(err => {
+            console.error("Errore nell'accesso alla fotocamera: ", err);
+        });
+
+    // Funzione per il rilevamento del movimento
+    function detectMotion(stream) {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        let lastImageData;
+
+        setInterval(() => {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+            if (lastImageData) {
+                const diff = compareImages(lastImageData.data, currentImageData.data);
+                if (diff > 10000) { // Soglia di movimento
+                    if (!timerRunning) {
+                        database.ref('timerStatus').set('start');
+                    } else {
+                        database.ref('timerStatus').set('stop');
                     }
-                } else {
-                    isMoving = false; // Ripristina lo stato del movimento
                 }
-
-                requestAnimationFrame(draw); // Richiama di nuovo la funzione
             }
 
-            draw(); // Inizia il disegno
-        }
+            lastImageData = currentImageData;
+        }, 100);
+    }
 
-        // Accedi alla fotocamera e inizializza il bin
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                const videoElement = document.getElementById('video');
-                videoElement.srcObject = stream;
-                videoElement.play();
-                detectMovement(videoElement); // Inizia a rilevare il movimento
-                initializeBin(); // Inizializza il bin
-            })
-            .catch(err => {
-                console.error("Errore nell'accesso alla fotocamera: ", err);
-            });
-    </script>
+    // Funzione per confrontare le immagini
+    function compareImages(data1, data2) {
+        let diff = 0;
+        for (let i = 0; i < data1.length; i += 4) {
+            const rDiff = Math.abs(data1[i] - data2[i]);
+            const gDiff = Math.abs(data1[i + 1] - data2[i + 1]);
+            const bDiff = Math.abs(data1[i + 2] - data2[i + 2]);
+            diff += rDiff + gDiff + bDiff;
+        }
+        return diff;
+    }
+
+    // Ascolta i cambiamenti nel database
+    database.ref('timerStatus').on('value', (snapshot) => {
+        const status = snapshot.val();
+        if (status === 'start' && !timerRunning) {
+            startTimer();
+        } else if (status === 'stop' && timerRunning) {
+            stopTimer();
+        }
+    });
+
+    // Funzione per avviare il timer
+    function startTimer() {
+        timerRunning = true;
+        timerInterval = setInterval(() => {
+            seconds++;
+            updateTimer();
+        }, 1000);
+    }
+
+    // Funzione per fermare il timer
+    function stopTimer() {
+        clearInterval(timerInterval);
+        timerRunning = false;
+    }
+
+    // Funzione per aggiornare il timer visualizzato
+    function updateTimer() {
+        document.getElementById('timer').innerText = `Tempo: ${seconds}s`;
+    }
+
+    // Event listeners per i pulsanti (opzionali, se vuoi controllare manualmente)
+    document.getElementById('start').addEventListener('click', () => {
+        database.ref('timerStatus').set('start');
+    });
+
+    document.getElementById('stop').addEventListener('click', () => {
+        database.ref('timerStatus').set('stop');
+    });
+</script>
+
 </body>
 </html>
