@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percorso Lento - Visualizzazione</title>
+    <style>
+        .rosso {
+            color: red;
+        }
+        .verde {
+            color: green;
+        }
+    </style>
+    <script>
+        function showElapsedTime() {
+            const elapsedTime = localStorage.getItem('elapsedTime');
+            const display = document.getElementById('timeDisplay');
+
+            if (elapsedTime) {
+                display.innerText = elapsedTime + " secondi";
+                if (parseFloat(elapsedTime) < 15) {
+                    display.className = 'rosso';
+                } else {
+                    display.className = 'verde';
+                }
+            } else {
+                display.innerText = "Il tempo non è ancora stato calcolato.";
+            }
+        }
+
+        setInterval(showElapsedTime, 1000);
+    </script>
+</head>
+<body>
+    <h1>Percorso Lento - Visualizzazione Tempo</h1>
+    <p id="timeDisplay">Il tempo non è ancora stato calcolato.</p>
+</body>
+</html>
